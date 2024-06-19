@@ -3,22 +3,22 @@ const checkParams = require("./src/checkParams");
 const Buffer = require("buffer/").Buffer;
 const fetch = require("node-fetch");
 const FormData = require("form-data");
-const { OAUTH_SERVER, IMMEWIDGET_URL } = require("./src/constants");
+const { OAUTH_SERVER, CYCURIDWIDGET_URL } = require("./src/constants");
 
 async function immeOauth(data, onSuccess, onFailure) {
   try {
     checkParams(data, onSuccess, onFailure);
     const scopeString = data.scope.join(" ");
     if (data.entity_name) {
-      widget = `${IMMEWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&entity_name=${data.entity_name}&action=${data.action}`;
+      widget = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&entity_name=${data.entity_name}&action=${data.action}`;
     } else {
-      widget = `${IMMEWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&action=${data.action}`;
+      widget = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&action=${data.action}`;
     }
 
     window.open(widget);
 
     window.addEventListener("message", async function listenForMessage(event) {
-      if (event.origin !== IMMEWIDGET_URL) {
+      if (event.origin !== CYCURIDWIDGET_URL) {
         return;
       } else {
         const token = await getToken({
@@ -62,13 +62,13 @@ async function getCode(data, onSuccess, onFailure) {
   try {
     checkParams(data, onSuccess, onFailure);
     if (data.entity_name) {
-      widget = `${IMMEWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&entity_name=${data.entity_name}&action=${data.action}`;
+      widget = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&entity_name=${data.entity_name}&action=${data.action}`;
     } else {
-      widget = `${IMMEWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&action=${data.action}`;
+      widget = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&action=${data.action}`;
     }
     window.open(widget);
     window.addEventListener("message", async (event) => {
-      if (event.origin !== IMMEWIDGET_URL) {
+      if (event.origin !== CYCURIDWIDGET_URL) {
         return;
       } else {
         onSuccess(event.data);

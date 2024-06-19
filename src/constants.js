@@ -1,5 +1,5 @@
-const OAUTH_SERVER = "https://api.cycurid.com";
-const IMMEWIDGET_URL = `https://accounts.imme.io`;
+const OAUTH_SERVER = "https://api2.cycurid.com";
+const CYCURIDWIDGET_URL = `https://connect.cycurid.com`;
 
-exports.IMMEWIDGET_URL = IMMEWIDGET_URL;
+exports.CYCURIDWIDGET_URL = CYCURIDWIDGET_URL;
 exports.OAUTH_SERVER = OAUTH_SERVER;
