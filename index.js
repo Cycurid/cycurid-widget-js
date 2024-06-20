@@ -3,36 +3,57 @@ const checkParams = require("./src/checkParams");
 const Buffer = require("buffer/").Buffer;
 const fetch = require("node-fetch");
 const FormData = require("form-data");
+
 const { OAUTH_SERVER, CYCURIDWIDGET_URL } = require("./src/constants");
 
-async function immeOauth(data, onSuccess, onFailure) {
+async function cycuridConnectInitialize(data, onSuccess, onFailure) {
   try {
+    
     checkParams(data, onSuccess, onFailure);
+    
+    // Generate a code verifier and code challenge for PKCE
+    const codeVerifier = generateRandomString(128);
+    const codeChallenge = await sha256(codeVerifier);
+
+    // Construct the scope string
     const scopeString = data.scope.join(" ");
+    
+    // Construct the widget URL
+    let widgetUrl = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${encodeURIComponent(data.origin_url)}&scope=${encodeURIComponent(scopeString)}&redirect_uri=${encodeURIComponent(data.redirect_uri)}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256&action=${data.action}`;
     if (data.entity_name) {
-      widget = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&entity_name=${data.entity_name}&action=${data.action}`;
-    } else {
-      widget = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${data.origin_url}&scope=${scopeString}&action=${data.action}`;
+      widgetUrl += `&entity_name=${encodeURIComponent(data.entity_name)}`;
     }
 
-    window.open(widget);
+    // Open the OAuth2 consent form
+    window.open(widgetUrl);
 
+    // Listen for messages from the consent form
     window.addEventListener("message", async function listenForMessage(event) {
-      if (event.origin !== CYCURIDWIDGET_URL) {
+      if (event.origin !== new URL(CYCURIDWIDGET_URL).origin) {
         return;
       } else {
-        const token = await getToken({
-          code: event.data.code,
-          client_id: data.client_id,
-          client_secret: data.client_secret,
-        });
-        if (token.status && token.status !== 200) {
-          onFailure(token);
-        } else {
-          const userInfo = await getUserInfo(token.access_token, token.scope);
-          onSuccess(userInfo, token);
+        try {
+          // Exchange the authorization code for an access token
+          const token = await getToken({
+            code: event.data.code,
+            client_id: data.client_id,
+            client_secret: data.client_secret,
+            redirect_uri: data.redirect_uri,
+            code_verifier: codeVerifier,
+          });
+
+          if (token.status && token.status !== 200) {
+            onFailure(token);
+          } else {
+            // Retrieve user information
+            const userInfo = await getUserInfo(token.access_token, token.scope);
+            onSuccess(userInfo, token);
+          }
+        } catch (error) {
+          onFailure(error);
+        } finally {
+          window.removeEventListener("message", listenForMessage);
         }
-        window.removeEventListener("message", listenForMessage);
       }
     });
   } catch (error) {
@@ -40,7 +61,27 @@ async function immeOauth(data, onSuccess, onFailure) {
   }
 }
 
-async function immeLogout(token, client_id, client_secret) {
+// Utility functions for PKCE
+function generateRandomString(length) {
+  const array = new Uint8Array(length);
+  window.crypto.getRandomValues(array);
+  return Array.from(array, byte => ('0' + byte.toString(16)).slice(-2)).join('');
+}
+
+async function sha256(plain) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(plain);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return base64urlEncode(hash);
+}
+
+function base64urlEncode(arrayBuffer) {
+  return btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+async function cycuridConnectLogout(token, client_id, client_secret) {
   try {
     if (typeof token !== "string" || !token) {
       throw "token is required and it must be a string";
@@ -290,11 +331,11 @@ async function refreshToken(data) {
 }
 
 module.exports = {
-  immeOauth,
+  cycuridConnectInitialize,
   getCode,
   getUserInfo,
   getToken,
   refreshToken,
   revokeToken,
-  immeLogout,
+  cycuridConnectLogout,
 };
