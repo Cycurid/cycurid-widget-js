@@ -17,41 +17,40 @@ npm install cycurid-widget-js
 IMPORT IN REACT:
 
 ```javascript
-import { immeOauth, immeLogout } from "cycurid-widget-js";
+import { cycuridConnectInitialize, cycuridConnectLogout } from "cycurid-widget-js";
 ```
 
 ### Supported methods
 
-#### immeOauth
+#### cycuridConnectInitialize
 
 This is the main function to use for authentication. Invoking this function will do the whole login flow and generate an access token, refresh token and access token expiry date. The token is then used to fetch the specified scope after successful login and verification by the user.
 
 ```javascript
-import { immeOauth } from 'cycurid-widget-js';
+import { cycuridConnectInitialize } from 'cycurid-widget-js';
 
 const config = {
   action: '<YOUR_ACTION>',
   client_id: '<YOUR_CLIENT_ID>',
   client_secret: '<YOUR_CLIENT_SECRET>',
-  origin_url: '<YOUR_ORIGIN_URL>',
+  redirect_uri: '<YOUR_REDIRECT_URI>',
   scopes: ['<YOUR_SCOPES_ARRAY>'],
-  entity_name: '<YOUR_ENTITY_NAME>'
 };
 
 const onSuccess = (userInfo, token) => {<YOUR_ONSUCCESS_FUNCTION>}
 const onFailure = (token) => {<YOUR_ONFAILURE_FUNCTION>}
 
-const result = await immeOauth(config,onSuccess,onFailure);
+const result = await cycuridConnectInitialize(config,onSuccess,onFailure);
 ```
 
-#### immeLogout
+#### cycuridConnectLogout
 
 This function will revoke the OAuth token.
 
 ```javascript
-import { immeLogout } from "cycurid-widget-js";
+import { cycuridConnectLogout } from "cycurid-widget-js";
 
-const logout = await immeLogout(token, client_id, client_secret);
+const logout = await cycuridConnectLogout(token, client_id, client_secret);
 ```
 
 ### config
@@ -59,14 +58,14 @@ const logout = await immeLogout(token, client_id, client_secret);
 This is your configuration object for the client. The config is passed into each of the methods with optional overrides.
 
 - **action** - This specifies the objective that you want the user to accomplish currently, we support 'login' and 'register'.
-- **client_id** - The ID provided to you from [CycurID Portal Website](https://portal.cycurid.com/) see [Account Creation](#account-creation) for more details.
-- **client_secret** - The Secret provided to you from [CycurID Portal Website](https://portal.cycurid.com/) see [Account Creation](#account-creation) for more details.
+- **client_id** - The ID provided to you from [CycurID Portal Website](https://dashboard.cycurid.com/) see [Account Creation](#account-creation) for more details.
+- **client_secret** - The Secret provided to you from [CycurID Portal Website](https://dashboard.cycurid.com/) see [Account Creation](#account-creation) for more details.
 - **origin_url** - This is the URL that the request is initially used to initiate the OAuth process. This URL needs to match the provided URL associated with the client account. The widget response will be sent to this address.
 - **entity_name** - OPTIONAL_KEY, this will change the name displayed on the widget.
 - **scopes** - An array of what user information you want to be returned.
 
 ```javascript
-[reference_uuid, email, phone, first_name, last_name, middle_name, dob];
+[openid email phone profile address vc];
 ```
 
 ### Demo Repository and Site
@@ -79,7 +78,7 @@ This is your configuration object for the client. The config is passed into each
 
 _An Cycurid Account is required to use this package_
 
-To create an account, navigate to [CycurID Portal Website](https://portal.cycurid.com/) and click Create An Account to start verifying users' identity with CycurID.
+To create an account, navigate to [CycurID Portal Website](https://dashboard.cycurid.com/) and click Create An Account to start verifying users' identity with CycurID.
 
 ## Contributing
 
@@ -91,7 +90,7 @@ Please make sure to update tests as appropriate.
 
 MIT License
 
-Copyright (c) 2022 CycurID
+Copyright (c) 2024 CycurID
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
