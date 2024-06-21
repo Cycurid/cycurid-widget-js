@@ -25,11 +25,11 @@ module.exports = function checkParams(data, onSuccess, onFailure) {
       throw { statusText: "onFailure function is required" };
     }
 
-    const redirectValid = isValidHttpUrl(data.redirect_uri);
+    // const redirectValid = isValidHttpUrl(data.redirect_uri);
 
-    if (!redirectValid) {
-      throw { statusText: "Invalid redirect_uri" };
-    }
+    // if (!redirectValid) {
+    //   throw { statusText: "Invalid redirect_uri" };
+    // }
 
     return true;
   } catch (error) {

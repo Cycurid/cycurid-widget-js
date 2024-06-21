@@ -14,7 +14,7 @@ async function cycuridConnectInitialize(data, onSuccess, onFailure) {
     // Generate a code verifier and code challenge for PKCE
     const codeVerifier = generateRandomString(128);
     const codeChallenge = await sha256(codeVerifier);
-
+    console.log(codeVerifier)
     // Construct the scope string
     const scopeString = data.scope.join(" ");
     
@@ -238,7 +238,7 @@ async function getToken(data) {
       headers: myHeaders,
       body: formdata,
     };
-    await fetch(`${OAUTH_SERVER}/oauth/token`, requestOptions)
+    await fetch(`${OAUTH_SERVER}/v2/cycurid-connect/widget/token`, requestOptions)
       .then((response) => {
         if (response.status !== 200) {
           throw response;
