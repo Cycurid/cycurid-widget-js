@@ -219,6 +219,9 @@ async function getToken(data) {
     if (!data.client_secret) {
       throw { statusText: "Missing client_secret" };
     }
+    if (!data.code_verifier) {
+      throw { statusText: "Missing code_verifier" };
+    }
 
     const info = `${data.client_id}:${data.client_secret}`;
     let response;
@@ -232,6 +235,7 @@ async function getToken(data) {
     formdata.append("grant_type", "authorization_code");
     formdata.append("scope", "username");
     formdata.append("code", data.code);
+    formdata.append("code_verifier", data.code_verifier);
 
     var requestOptions = {
       method: "POST",
