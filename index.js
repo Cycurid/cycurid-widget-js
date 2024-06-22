@@ -8,18 +8,27 @@ const { OAUTH_SERVER, CYCURIDWIDGET_URL } = require("./src/constants");
 
 async function cycuridConnectInitialize(data, onSuccess, onFailure) {
   try {
-    
     checkParams(data, onSuccess, onFailure);
-    
+
     // Generate a code verifier and code challenge for PKCE
     const codeVerifier = generateRandomString(128);
     const codeChallenge = await sha256(codeVerifier);
-    console.log(codeVerifier)
+
     // Construct the scope string
     const scopeString = data.scope.join(" ");
-    
+
     // Construct the widget URL
-    let widgetUrl = `${CYCURIDWIDGET_URL}?client_id=${data.client_id}&origin_url=${encodeURIComponent(data.origin_url)}&scope=${encodeURIComponent(scopeString)}&redirect_uri=${encodeURIComponent(data.redirect_uri)}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=S256&action=${data.action}`;
+    let widgetUrl = `${CYCURIDWIDGET_URL}?client_id=${
+      data.client_id
+    }&origin_url=${encodeURIComponent(
+      data.origin_url
+    )}&scope=${encodeURIComponent(
+      scopeString
+    )}&redirect_uri=${encodeURIComponent(
+      data.redirect_uri
+    )}&code_challenge=${encodeURIComponent(
+      codeChallenge
+    )}&code_challenge_method=S256&action=${data.action}`;
     if (data.entity_name) {
       widgetUrl += `&entity_name=${encodeURIComponent(data.entity_name)}`;
     }
@@ -42,11 +51,13 @@ async function cycuridConnectInitialize(data, onSuccess, onFailure) {
             code_verifier: codeVerifier,
           });
 
-          if (token.status && token.status !== 200) {
+          if (!token) {
             onFailure(token);
           } else {
             // Retrieve user information
-            const userInfo = await getUserInfo(token.access_token, token.scope);
+
+            const userInfo = await getUserInfo(token.token);
+
             onSuccess(userInfo, token);
           }
         } catch (error) {
@@ -65,21 +76,23 @@ async function cycuridConnectInitialize(data, onSuccess, onFailure) {
 function generateRandomString(length) {
   const array = new Uint8Array(length);
   window.crypto.getRandomValues(array);
-  return Array.from(array, byte => ('0' + byte.toString(16)).slice(-2)).join('');
+  return Array.from(array, (byte) => ("0" + byte.toString(16)).slice(-2)).join(
+    ""
+  );
 }
 
 async function sha256(plain) {
   const encoder = new TextEncoder();
   const data = encoder.encode(plain);
-  const hash = await crypto.subtle.digest('SHA-256', data);
+  const hash = await crypto.subtle.digest("SHA-256", data);
   return base64urlEncode(hash);
 }
 
 function base64urlEncode(arrayBuffer) {
   return btoa(String.fromCharCode.apply(null, new Uint8Array(arrayBuffer)))
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 async function cycuridConnectLogout(token, client_id, client_secret) {
   try {
@@ -168,7 +181,6 @@ async function revokeToken(data) {
 
     return response;
   } catch (error) {
-    console.log(error.response);
     if (error.status) {
       return {
         status: error.status,
@@ -186,14 +198,24 @@ async function getUserInfo(token) {
     if (!token) {
       throw { statusText: "Token is required." };
     }
-    return await axiosRequest(
-      "get",
-      `${OAUTH_SERVER}/oauth/userinfo`,
-      {},
-      {
-        Authorization: `Bearer ${token}`,
-      }
+
+    const myHeaders = {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
+
+    const requestOptions = {
+      method: "GET",
+      headers: myHeaders,
+    };
+
+    const response = await fetch(
+      `${OAUTH_SERVER}/v2/cycurid-connect/widget/getUserData`,
+      requestOptions
     );
+    const result = await response.json();
+    return result;
   } catch (error) {
     if (error.response.status) {
       return {
@@ -224,42 +246,38 @@ async function getToken(data) {
     }
 
     const info = `${data.client_id}:${data.client_secret}`;
-    let response;
-
-    let buff = new Buffer(info);
+    let buff = Buffer.from(info);
     let base64data = buff.toString("base64");
-    var myHeaders = new fetch.Headers();
-    myHeaders.append("Authorization", `Basic ${base64data}`);
 
-    var formdata = new FormData();
-    formdata.append("grant_type", "authorization_code");
-    formdata.append("scope", "username");
-    formdata.append("code", data.code);
-    formdata.append("code_verifier", data.code_verifier);
+    const myHeaders = {
+      Authorization: `Basic ${base64data}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
 
-    var requestOptions = {
+    const requestBody = {
+      grant_type: "authorization_code",
+      scope: "username",
+      code: data.code,
+      code_verifier: data.code_verifier,
+    };
+
+    const requestOptions = {
       method: "POST",
       headers: myHeaders,
-      body: formdata,
+      body: JSON.stringify(requestBody),
     };
-    await fetch(`${OAUTH_SERVER}/v2/cycurid-connect/widget/token`, requestOptions)
-      .then((response) => {
-        if (response.status !== 200) {
-          throw response;
-        }
-        return response.text();
-      })
-      .then((res) => {
-        return JSON.parse(res);
-      })
-      .then((data) => {
-        response = data;
-      })
-      .catch((error) => {
-        throw error;
-      });
 
-    return response;
+    const response = await fetch(
+      `${OAUTH_SERVER}/v2/cycurid-connect/widget/token`,
+      requestOptions
+    );
+    if (response.status !== 200) {
+      throw response;
+    }
+
+    const result = await response.json();
+    return result;
   } catch (error) {
     if (error.status) {
       return {
