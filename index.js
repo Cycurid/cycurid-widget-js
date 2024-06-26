@@ -58,7 +58,7 @@ async function cycuridConnectInitialize(data, onSuccess, onFailure) {
 
             const userInfo = await getUserInfo(token.token);
 
-            onSuccess(userInfo, token);
+            onSuccess(userInfo, token.token);
           }
         } catch (error) {
           onFailure(error);
@@ -109,7 +109,9 @@ async function cycuridConnectLogout(token, client_id, client_secret) {
         client_secret,
       });
     }
-  } catch (error) {}
+  } catch (error) {
+    console.log("logout error: " + error);
+  }
 }
 
 async function getCode(data, onSuccess, onFailure) {
@@ -136,9 +138,6 @@ async function getCode(data, onSuccess, onFailure) {
 // need revoke token
 async function revokeToken(data) {
   try {
-    if (!data.token) {
-      throw { statusText: "Missing token" };
-    }
     if (!data.client_id) {
       throw { statusText: "Missing client_id" };
     }
@@ -147,39 +146,35 @@ async function revokeToken(data) {
     }
 
     const info = `${data.client_id}:${data.client_secret}`;
-    let response;
-
-    let buff = new Buffer(info);
+    let buff = Buffer.from(info);
     let base64data = buff.toString("base64");
-    var myHeaders = new fetch.Headers();
-    myHeaders.append("Authorization", `Basic ${base64data}`);
 
-    var formdata = new FormData();
-    formdata.append("token", data.token);
+    const myHeaders = {
+      Authorization: `Basic ${base64data}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
 
-    var requestOptions = {
+    const requestBody = {
+      token: data.token,
+    };
+
+    const requestOptions = {
       method: "POST",
       headers: myHeaders,
-      body: formdata,
+      body: JSON.stringify(requestBody),
     };
-    await fetch(`${OAUTH_SERVER}/oauth/revoke`, requestOptions)
-      .then((response) => {
-        if (response.status !== 200) {
-          throw response;
-        }
-        return response.text();
-      })
-      .then((res) => {
-        return JSON.parse(res);
-      })
-      .then((data) => {
-        response = data;
-      })
-      .catch((error) => {
-        throw error;
-      });
 
-    return response;
+    const response = await fetch(
+      `${OAUTH_SERVER}/v2/cycurid-connect/widget/revokeToken`,
+      requestOptions
+    );
+    if (response.status !== 200) {
+      throw response;
+    }
+
+    const result = await response.json();
+    return result;
   } catch (error) {
     if (error.status) {
       return {
@@ -257,7 +252,6 @@ async function getToken(data) {
 
     const requestBody = {
       grant_type: "authorization_code",
-      scope: "username",
       code: data.code,
       code_verifier: data.code_verifier,
     };
